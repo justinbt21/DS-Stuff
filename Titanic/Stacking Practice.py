@@ -14,6 +14,8 @@ import xgboost as xgb
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from IPython import get_ipython
+get_ipython().run_line_magic('matplotlib', 'inline')
 
 import plotly.offline as py
 py.init_notebook_mode(connected=True)
@@ -52,7 +54,7 @@ for dataset in full_data:
 # IsAlone
 for dataset in full_data:
     dataset['is_alone'] = 0
-    dataset.loc[dataset['family_size'] == 1, 'is_alone'] == 1
+    dataset.loc[dataset['family_size'] == 1, 'is_alone'] = 1
     
 # Remove all NULLS in the Embarked column
 for dataset in full_data:
@@ -125,5 +127,11 @@ train = train.drop(drop_elements, axis = 1)
 train = train.drop(['categorical_age', 'categorical_fare'], axis = 1)
 test = test.drop(drop_elements, axis = 1)
 
-train.head(3)
+colormap = plt.cm.viridis  
+plt.figure(figsize=(20,16))
+plt.title('Pearson Correlation of Features', y=1.05, size=15)
+sns.heatmap(train.astype(float).corr(), linewidths=0.5, vmax=1.0, square=True, cmap=colormap, linecolor='white', annot=True)
+
+pplot = sns.pairplot(train[[u'Survived', u'Sex', u'Age', u'Parch', u'Fare', u'Embarked', u'family_size', u'Title']], hue='Survived', palette = 'seismic', size = 1.2, diag_kind = 'kde', diag_kws=dict(shade=True), plot_kws=dict(s=10))
+pplot.set(xticklabels=[])
 
