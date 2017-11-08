@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import re
 import sklearn
-import xgboost as xgb
+# import xgboost as xgb
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
@@ -30,7 +30,8 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, Gradien
 from sklearn.svm import SVC
 from sklearn.cross_validation import KFold
 
-os.chdir('/Users/justinbt/Documents/GitHub/Kaggle/')
+os.chdir('C:/Users/justintran/Documents/GitHub/Kaggle')
+# os.chdir('/Users/justinbt/Documents/GitHub/Kaggle/')
 # Load in the train and test datasets
 train = pd.read_csv('Titanic/Data/train.csv')
 test = pd.read_csv('Titanic/Data/test.csv')
@@ -125,3 +126,13 @@ sns.heatmap(train.astype(float).corr(), linewidths=0.5, vmax=1.0, square=True, c
 
 pplot = sns.pairplot(train[[u'Survived', u'Sex', u'Age', u'Parch', u'Fare', u'Embarked', u'family_size', u'Title']], hue='Survived', palette = 'seismic', size = 1.2, diag_kind = 'kde', diag_kws=dict(shade=True), plot_kws=dict(s=10))
 pplot.set(xticklabels=[])
+
+# Some useful parameters which will come in handy later on
+ntrain = train.shape[0]
+ntest = test.shape[0]
+SEED = 0 # for reproducibility
+NFOLDS = 5 # set folds for out of fold prediction
+kf = KFold(ntrain, n_folds=NFOLDS, random_state=SEED)
+
+# Class to extend the Sklearn classifier
+
