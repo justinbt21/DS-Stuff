@@ -22,19 +22,6 @@ def getPID(name):
     pid = player.get_player(name[0], name[1], just_id = True).item()
     return pid
 
-def getData(name, *start_year):
-    id = getPID(name)
-    
-    df = pd.DataFrame(player.PlayerCareer(id, 'PerGame').regular_season_totals())
-    df.columns = list(map(lambda x:x.lower(), df))
-    
-    if start_year[0]:
-        year = str(start_year[0]) + '-' + str(start_year[0]+1)[-2:]
-        df = df.loc[df['season_id'] == year]
-        
-    return df
-
-
 def makeSoup(url):
 	hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
 	       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -80,14 +67,29 @@ def getURL(id, season):
     
 	return url
 
-def getData(name, season):
-	id = getPlayerId(name)
-	url = getURL(id, season)
-	soup = makeSoup(url)
-	df = makeDataframe(soup)
-	return df
+def getData(name, season, type):
+	if type == 'ShotDist':
+		id = getPlayerId(name)
+		url = getURL(id, str(season))
+		soup = makeSoup(url)
+		df = makeDataframe(soup)
+		return df
+	
+	elif type == 'PerGame':
+		id = getPlayerId(name)
+		df = pd.DataFrame(player.PlayerCareer(id, 'PerGame').regular_season_totals())
+		df.columns = list(map(lambda x:x.lower(), df))
 
+		if season:
+			year = season + '-' + str(int(season)+1)[-2:]
+			df = df.loc[df['season_id'] == year]
+		return df
 
-if __name__ == '__main__':
-    df = getData('james harden', '2016')
-    print(df.head())
+	elif type == 'GameLogs':
+		id = getPlayerId(name)
+		year = season + '-' + str(int(season)+1)[-2:]
+		df = player.PlayerGameLogs(getPlayerId(id), '00', year, 'Regular Season').info()
+		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
+		return df
+		
+
