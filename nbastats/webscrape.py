@@ -53,12 +53,15 @@ def makeDataframe(soup):
 
 
 def getPlayerId(name):
-    name = name.split(' ')
+	name = name.split(' ')
 
     # If returned with execption 400 bad request for url, you sometimes have to open the link in your browser then it will work. Weird bug.
-
-    player = nba.player.get_player(name[0], name[1], just_id=True)
-    return player
+	try:
+		nba.player.get_player(name[0], name[1], just_id=True)
+	except:
+		return 'That player name is unavailable. Please check your spelling.'
+	player = nba.player.get_player(name[0], name[1], just_id=True)
+	return player.item()
 
 def getURL(id, season):
 
@@ -67,28 +70,35 @@ def getURL(id, season):
     
 	return url
 
-def getData(name, season, type):
+def getData(name, type, season=None):
 	if type == 'ShotDist':
 		id = getPlayerId(name)
 		url = getURL(id, str(season))
 		soup = makeSoup(url)
 		df = makeDataframe(soup)
+		df = df.sort_values(['Game Date', 'Q', 'Time'], ascending = [True, True, False])
+		df.columns = list(map(lambda x:x.upper(), df))
+		df.columns = list(map(lambda x:x.replace(' ', '_'), df))
 		return df
 	
 	elif type == 'PerGame':
 		id = getPlayerId(name)
 		df = pd.DataFrame(player.PlayerCareer(id, 'PerGame').regular_season_totals())
-		df.columns = list(map(lambda x:x.lower(), df))
+		df.columns = list(map(lambda x:x.upper(), df))
 
 		if season:
 			year = season + '-' + str(int(season)+1)[-2:]
-			df = df.loc[df['season_id'] == year]
+			df = df.loc[df['SEASON_ID'] == year]
 		return df
 
 	elif type == 'GameLogs':
 		id = getPlayerId(name)
+		try:
+			season + '-' + str(int(season)+1)[-2:]
+		except:
+			return 'Season is required.  Please fill.'
 		year = season + '-' + str(int(season)+1)[-2:]
-		df = player.PlayerGameLogs(getPlayerId(id), '00', year, 'Regular Season').info()
+		df = player.PlayerGameLogs(id, '00', year, 'Regular Season').info()
 		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
 		return df
 		
