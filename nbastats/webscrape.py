@@ -16,6 +16,8 @@ import nba_py as nba
 from nba_py import player
 import sys
 from nba_py import shotchart
+import plotly
+from plotly.graph_objs import Scatter, Layout
 
 def makeSoup(url):
 	hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
@@ -112,7 +114,7 @@ def getDefenseData(name, type, stat_type, season):
 	df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
 	return 'PlayerName: '+ name.upper(), 'Season: ' + year, df
 
-def getShotChart(name, season):
+def getShotData(name, season):
     id = getPlayerId(name)
     year = season + '-' + str(int(season)+1)[-2:]
     shot_data = shotchart.ShotChart(id, season = year).json
@@ -125,5 +127,6 @@ def getShotChart(name, season):
     df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
     return df
 
-
+def getShotChart(name, season):
+    shot_df = getShotData(name, season)
     
