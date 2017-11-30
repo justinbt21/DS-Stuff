@@ -15,12 +15,7 @@ import pandas as pd
 import nba_py as nba
 from nba_py import player
 import sys
-
-
-def getPID(name):
-    name = name.split(' ')
-    pid = player.get_player(name[0], name[1], just_id = True).item()
-    return pid
+from nba_py import shotchart
 
 def makeSoup(url):
 	hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
@@ -100,6 +95,35 @@ def getData(name, type, season=None):
 		year = season + '-' + str(int(season)+1)[-2:]
 		df = player.PlayerGameLogs(id, '00', year, 'Regular Season').info()
 		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
-		return df
-		
+		return df.sort_values(['GAME_DATE'])
+    
+def getDefenseData(name, type, stat_type, season):
+	id = getPlayerId(name)
+	year = season + '-' + str(int(season)+1)[-2:]
+	player.PlayerDefenseTracking(id, 0) 
+	json = player.PlayerDefenseTracking(getPlayerId(name), 0, measure_type = stat_type, per_mode = type, season = year).json
 
+	data = json['resultSets'][0]['rowSet']
+	indices = [x[3] for x in data]
+	colnames = json['resultSets'][0]['headers']
+	
+
+	df = pd.DataFrame(data, index = indices, columns = colnames)
+	df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
+	return 'PlayerName: '+ name.upper(), 'Season: ' + year, df
+
+def getShotChart(name, season):
+    id = getPlayerId(name)
+    year = season + '-' + str(int(season)+1)[-2:]
+    shot_data = shotchart.ShotChart(id, season = year).json
+    
+    data = shot_data['resultSets'][0]['rowSet']
+    indices = range(0, len(data))
+    colnames = shot_data['resultSets'][0]['headers']
+    
+    df = pd.DataFrame(data, index = indices, columns = colnames)
+    df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
+    return df
+
+
+    
