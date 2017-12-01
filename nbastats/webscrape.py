@@ -19,6 +19,8 @@ from nba_py import shotchart
 import plotly
 from plotly.graph_objs import Scatter, Layout
 
+
+"""
 def makeSoup(url):
 	hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
 	       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -33,7 +35,6 @@ def makeSoup(url):
 	soup = BeautifulSoup(content, 'lxml')
 	return soup
 
-
 def makeHeaders(soup):
 
 	column_headers = [th.getText() for th in soup.findAll('th')]
@@ -47,7 +48,7 @@ def makeDataframe(soup):
 
 	df = pd.DataFrame(player_data, columns=column_headers)
 	return df
-
+"""
 
 def getPlayerId(name):
 	name = name.split(' ')
@@ -67,15 +68,19 @@ def getURL(id, season):
     
 	return url
 
+
 def getData(name, type, season=None):
-	if type == 'ShotDist':
+	if type == 'ShotLog':
 		id = getPlayerId(name)
-		url = getURL(id, str(season))
-		soup = makeSoup(url)
-		df = makeDataframe(soup)
-		df = df.sort_values(['Game Date', 'Q', 'Time'], ascending = [True, True, False])
-		df.columns = list(map(lambda x:x.upper(), df))
-		df.columns = list(map(lambda x:x.replace(' ', '_'), df))
+		year = season + '-' + str(int(season)+1)[-2:]
+		shot_data = shotchart.ShotChart(id, season = year).json
+		
+		data = shot_data['resultSets'][0]['rowSet']
+		indices = range(0, len(data))
+		colnames = shot_data['resultSets'][0]['headers']
+		
+		df = pd.DataFrame(data, index = indices, columns = colnames)
+		df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
 		return df
 	
 	elif type == 'PerGame':
@@ -98,35 +103,21 @@ def getData(name, type, season=None):
 		df = player.PlayerGameLogs(id, '00', year, 'Regular Season').info()
 		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
 		return df.sort_values(['GAME_DATE'])
-    
-def getDefenseData(name, type, stat_type, season):
+        
+def getDefenseData(name, type, season):
 	id = getPlayerId(name)
 	year = season + '-' + str(int(season)+1)[-2:]
 	player.PlayerDefenseTracking(id, 0) 
-	json = player.PlayerDefenseTracking(getPlayerId(name), 0, measure_type = stat_type, per_mode = type, season = year).json
+	json = player.PlayerDefenseTracking(getPlayerId(name), 0, measure_type = 'Base', per_mode = type, season = year).json
 
 	data = json['resultSets'][0]['rowSet']
 	indices = [x[3] for x in data]
 	colnames = json['resultSets'][0]['headers']
-	
 
 	df = pd.DataFrame(data, index = indices, columns = colnames)
 	df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
-	return 'PlayerName: '+ name.upper(), 'Season: ' + year, df
-
-def getShotData(name, season):
-    id = getPlayerId(name)
-    year = season + '-' + str(int(season)+1)[-2:]
-    shot_data = shotchart.ShotChart(id, season = year).json
-    
-    data = shot_data['resultSets'][0]['rowSet']
-    indices = range(0, len(data))
-    colnames = shot_data['resultSets'][0]['headers']
-    
-    df = pd.DataFrame(data, index = indices, columns = colnames)
-    df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
-    return df
+	return 'PlayerName: '+ name.upper(), 'Season: ' + year, df    
 
 def getShotChart(name, season):
-    shot_df = getShotData(name, season)
+	shot_df = getData(name, 'ShotLog', season)
     
