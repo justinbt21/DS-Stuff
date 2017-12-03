@@ -48,6 +48,14 @@ def makeDataframe(soup):
 
 	df = pd.DataFrame(player_data, columns=column_headers)
 	return df
+
+def getURL(id, season):
+
+	id = str(int(id))
+	url ='http://nbasavant.com/ajax/getShotsByPlayer.php?hfST=&hfQ=&pid%5B%5D='+id+'&hfSZB=&hfSZA=&hfSZR=&ddlYear='+season+'&txtGameDateGT=&txtGameDateLT=&ddlGameTimeGT_min=&ddlGameTimeGT_sec=&ddlGameTimeLT_min=&ddlGameTimeLT_sec=&ddlShotClockGT=&ddlShotClockLT=&ddlDefDistanceGT=&ddlDefDistanceLT=&ddlDribblesGT=&ddlDribblesLT=&ddlTouchTimeGT=&ddlTouchTimeLT=&ddlShotDistanceGT=&ddlShotDistanceLT=&ddlTeamShooting=&ddlTeamDefense=&hfPT=&ddlGroupBy=player&ddlOrderBy=shots_made_desc&hfGT=0%7C&ddlShotMade=&ddlMin=0&player_id='+id+'&data=null&_=1459806001585'
+    
+	return url
+
 """
 
 def getPlayerId(name):
@@ -61,12 +69,7 @@ def getPlayerId(name):
 	player = nba.player.get_player(name[0], name[1], just_id=True)
 	return player.item()
 
-def getURL(id, season):
 
-	id = str(int(id))
-	url ='http://nbasavant.com/ajax/getShotsByPlayer.php?hfST=&hfQ=&pid%5B%5D='+id+'&hfSZB=&hfSZA=&hfSZR=&ddlYear='+season+'&txtGameDateGT=&txtGameDateLT=&ddlGameTimeGT_min=&ddlGameTimeGT_sec=&ddlGameTimeLT_min=&ddlGameTimeLT_sec=&ddlShotClockGT=&ddlShotClockLT=&ddlDefDistanceGT=&ddlDefDistanceLT=&ddlDribblesGT=&ddlDribblesLT=&ddlTouchTimeGT=&ddlTouchTimeLT=&ddlShotDistanceGT=&ddlShotDistanceLT=&ddlTeamShooting=&ddlTeamDefense=&hfPT=&ddlGroupBy=player&ddlOrderBy=shots_made_desc&hfGT=0%7C&ddlShotMade=&ddlMin=0&player_id='+id+'&data=null&_=1459806001585'
-    
-	return url
 
 
 def getData(name, type, season=None):
@@ -103,21 +106,18 @@ def getData(name, type, season=None):
 		df = player.PlayerGameLogs(id, '00', year, 'Regular Season').info()
 		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
 		return df.sort_values(['GAME_DATE'])
-        
-def getDefenseData(name, type, season):
-	id = getPlayerId(name)
-	year = season + '-' + str(int(season)+1)[-2:]
-	player.PlayerDefenseTracking(id, 0) 
-	json = player.PlayerDefenseTracking(getPlayerId(name), 0, measure_type = 'Base', per_mode = type, season = year).json
 
-	data = json['resultSets'][0]['rowSet']
-	indices = [x[3] for x in data]
-	colnames = json['resultSets'][0]['headers']
+	elif type == 'Defense':
+		id = getPlayerId(name)
+		year = season + '-' + str(int(season)+1)[-2:]
+		player.PlayerDefenseTracking(id, 0) 
+		json = player.PlayerDefenseTracking(getPlayerId(name), 0, measure_type = 'Base', per_mode = 'PerGame', season = year).json
 
-	df = pd.DataFrame(data, index = indices, columns = colnames)
-	df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
-	return 'PlayerName: '+ name.upper(), 'Season: ' + year, df    
+		data = json['resultSets'][0]['rowSet']
+		indices = [x[3] for x in data] # Set DEFENSE_CATEGORY as index
+		colnames = json['resultSets'][0]['headers']
 
-def getShotChart(name, season):
-	shot_df = getData(name, 'ShotLog', season)
-    
+		df = pd.DataFrame(data, index = indices, columns = colnames)
+		df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
+		return 'PlayerName: '+ name.upper(), 'Season: ' + year, df    
+
