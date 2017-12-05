@@ -72,7 +72,8 @@ def getPlayerId(name):
 
 
 
-def getData(name, type, season=None):
+def getData(name, type, season=''):
+	season = str(season)
 	if type == 'ShotLog':
 		id = getPlayerId(name)
 		year = season + '-' + str(int(season)+1)[-2:]
@@ -96,7 +97,7 @@ def getData(name, type, season=None):
 			df = df.loc[df['SEASON_ID'] == year]
 		return df
 
-	elif type == 'GameLogs':
+	elif type == 'GameLog':
 		id = getPlayerId(name)
 		try:
 			season + '-' + str(int(season)+1)[-2:]
@@ -121,3 +122,29 @@ def getData(name, type, season=None):
 		df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
 		return 'PlayerName: '+ name.upper(), 'Season: ' + year, df    
 
+	elif type == 'ShotMap':
+		id = getPlayerId(name)
+		year = season + '-' + str(int(season)+1)[-2:]
+		shot_data = shotchart.ShotChart(id, season = year).json
+
+		data = shot_data['resultSets'][0]['rowSet']
+		indices = range(0, len(data))
+		colnames = shot_data['resultSets'][0]['headers']
+		
+		df = pd.DataFrame(data, index = indices, columns = colnames)
+		df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
+
+		df_size = df.groupby(['SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE']).size()
+		df_made = df.loc[df['SHOT_MADE_FLAG'] == 1].groupby(['SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE']).size()
+
+		df_pct = df_made / df_size
+		df_pct = df_pct.fillna(0)
+
+		df_size = df_size.to_frame('SHOTS_ATT').reset_index()
+		df_made = df_made.to_frame('SHOTS_MADE').reset_index()
+		df_pct = df_pct.to_frame('SHOT_PCT').reset_index()
+
+		df = df_made.merge(df_size, how = 'right', on = ['SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE']).fillna(int(0)).merge(df_pct, on = ['SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE'])
+		df['SHOTS_MADE'] = df['SHOTS_MADE'].astype(int)
+
+		return df
