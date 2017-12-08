@@ -7,17 +7,12 @@ Created on Fri Nov 17 12:05:09 2017
 
 import pandas as pd
 import numpy as np
-from bs4 import BeautifulSoup
-from lxml import html
-import requests
-import urllib3
 import pandas as pd
 import nba_py as nba
 from nba_py import player
 import sys
 from nba_py import shotchart
-import plotly
-from plotly.graph_objs import Scatter, Layout
+
 
 
 """
@@ -74,7 +69,7 @@ def getPlayerId(name):
 
 def getData(name, type, season=''):
 	season = str(season)
-	if type == 'ShotLog':
+	if type.lower() == 'shotlog':
 		id = getPlayerId(name)
 		year = season + '-' + str(int(season)+1)[-2:]
 		shot_data = shotchart.ShotChart(id, season = year).json
@@ -87,7 +82,7 @@ def getData(name, type, season=''):
 		df = df.sort_values(['GAME_DATE', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING'], ascending = [1,1,0,0])
 		return df
 	
-	elif type == 'PerGame':
+	elif type.lower() == 'pergame':
 		id = getPlayerId(name)
 		df = pd.DataFrame(player.PlayerCareer(id, 'PerGame').regular_season_totals())
 		df.columns = list(map(lambda x:x.upper(), df))
@@ -97,7 +92,7 @@ def getData(name, type, season=''):
 			df = df.loc[df['SEASON_ID'] == year]
 		return df
 
-	elif type == 'GameLog':
+	elif type.lower() == 'gamelog':
 		id = getPlayerId(name)
 		try:
 			season + '-' + str(int(season)+1)[-2:]
@@ -108,7 +103,7 @@ def getData(name, type, season=''):
 		df['GAME_DATE'] = pd.to_datetime(pd.to_datetime(df['GAME_DATE'], infer_datetime_format = True), format= '%Y%m%d')
 		return df.sort_values(['GAME_DATE'])
 
-	elif type == 'Defense':
+	elif type.lower() == 'defense':
 		id = getPlayerId(name)
 		year = season + '-' + str(int(season)+1)[-2:]
 		player.PlayerDefenseTracking(id, 0) 
@@ -122,7 +117,7 @@ def getData(name, type, season=''):
 		df = df.drop(['CLOSE_DEF_PERSON_ID', 'DEFENSE_CATEGORY'], axis = 1)
 		return 'PlayerName: '+ name.upper(), 'Season: ' + year, df    
 
-	elif type == 'ShotMap':
+	elif type.lower() == 'shotmap':
 		id = getPlayerId(name)
 		year = season + '-' + str(int(season)+1)[-2:]
 		shot_data = shotchart.ShotChart(id, season = year).json
