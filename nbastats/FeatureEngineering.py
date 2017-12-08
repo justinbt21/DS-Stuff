@@ -55,4 +55,8 @@ def combineTeam(name, season):
     df1 = df1.drop(['VIDEO_AVAILABLE', 'TEAM_GAME_ID', 'TEAM_TEAM_ID'], axis=1)
     df1 = df1.rename(columns = {'TEAM_TEAM_NAME' : 'TEAM_NAME', 'TEAM_TEAM_ABBREVIATION' : 'TEAM_ABBREVIATION', 'TEAM_TEAM_CITY' : 'TEAM_CITY'})
     df2 = df.loc[df['TEAM_ID'] != df['TEAM_TEAM_ID']].iloc[:,27:]
+    df2 = df2.rename(columns = {'TEAM_TEAM_NAME' : 'TEAM_NAME', 'TEAM_TEAM_ABBREVIATION' : 'TEAM_ABBREVIATION', 'TEAM_TEAM_CITY' : 'TEAM_CITY'})
+    df2.columns = ['OPP_'+x for x in df2.columns]
+    df2 =  df2.drop('OPP_TEAM_ID', axis = 1)
+    df = pd.merge(df1, df2, 'left', left_on='GAME_ID', right_on='OPP_TEAM_GAME_ID')
     return df
