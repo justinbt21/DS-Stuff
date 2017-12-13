@@ -46,7 +46,7 @@ def combineTeam(name, season):
         teamstats = pd.DataFrame(game.Boxscore(str(i), str(season) + '-' + str(int(season)+1)[-2:]).team_stats())
         teamstats.columns = ['TEAM_'+str(x) for x in teamstats.columns]
         ts = ts.append(teamstats)
-        sleep(2)
+        sleep(randint(.1,3))
         counter += 1
         print('Finished {0} %'.format(round((counter/total)*100,0)))
     
@@ -62,4 +62,5 @@ def combineTeam(name, season):
     df2 =  df2.drop('OPP_TEAM_ID', axis = 1)
     
     df = pd.merge(df1, df2, 'left', left_on='GAME_ID', right_on='OPP_TEAM_GAME_ID')
+    df = df.drop('OPP_TEAM_GAME_ID', axis=1)
     return df
