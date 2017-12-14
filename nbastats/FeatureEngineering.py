@@ -19,13 +19,24 @@ FantasyTeam = ['john wall', 'rudy gobert', 'lonzo ball', 'khris middleton', 'jj 
 
 playerInfo = pd.DataFrame(player.PlayerList(season='2017-18', only_current=1).info())
 """
-def tradeMachine(current_team, proposed_players, receiving players, season=2017):
+def tradeEvaluator(current_team, proposed_players, receiving_players, season=2017):
     df = pd.DataFrame()
     for i in current_team:
-        data = getData(i, 'PerGame', season)
+        data = getData(i, 'GameLog', season)
         data['PLAYER_NAME'] = i.title()
         df = df.append(data)
         sleep(3)
+
+    for i in receiving_players:
+    	data = getData(i, 'GameLog', season)
+    	data['PLAYER_NAME'] = i.title()
+    	df = df.append(data)
+    	sleep(3)
+
+    mean = pd.DataFrame(df.groupby('PLAYER_NAME').mean.())
+	std = pd.DataFrame(df.groupby('PLAYER_NAME').std())
+	stats = pd.merge(mean, std, how = 'inner', on = 'PLAYER_NAME')
+	df = pd.merge(df, stats, how = 'inner', on = 'PLAYER_NAME')
     return df
 
 """
