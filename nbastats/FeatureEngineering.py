@@ -15,6 +15,8 @@ from webscrape import getData
 from time import sleep
 from datetime import datetime
 from dateutil.relativedelta import relativedelta as tDelta
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+import plotly.graph_objs as go
 
 # Params
 current_year = int(datetime.date(datetime.now()).strftime('%Y'))-1 if datetime.date(datetime.now()).month < 11 else int(datetime.date(datetime.now()).strftime('%Y'))
@@ -44,7 +46,7 @@ def getStats(player_list, season=current_year, last_game_range = None):
     return df
 
 
-def tradeEvaluator(current_team, proposed_players=[], received_players=[], season=current_year, last_game_range = None):
+def tradeEvaluator(current_team, proposed_players=[], received_players=[], season=current_year, last_game_range = None, graph_data = False):
     total_players = fantasy_team + received_players
 
     df = getStats(total_players, season, last_game_range = last_game_range)
@@ -52,22 +54,45 @@ def tradeEvaluator(current_team, proposed_players=[], received_players=[], seaso
     current_team = df.loc[df['PLAYER_NAME'].str.lower().isin(fantasy_team)]
     new_team = df.loc[~df['PLAYER_NAME'].str.lower().isin(proposed_players)]
 
-    current_stats = current_team.groupby('PLAYER_NAME').mean()
+    current_stats = current_team.groupby('PLAYER_NAME').mean() * 3
     current_total_stats = current_stats.sum()
     current_total_stats['FG_PCT'] = current_total_stats['FGM']/current_total_stats['FGA']
     current_total_stats['FG3_PCT'] = current_total_stats['FG3M']/current_total_stats['FG3A']
     current_total_stats['FT_PCT'] = current_total_stats['FTM']/current_total_stats['FTA']
     
-    new_stats = new_team.groupby('PLAYER_NAME').mean()
+    new_stats = new_team.groupby('PLAYER_NAME').mean() * 3
     new_total_stats = new_stats.sum()
     new_total_stats['FG_PCT'] = new_total_stats['FGM']/new_total_stats['FGA']
     new_total_stats['FG3_PCT'] = new_total_stats['FG3M']/new_total_stats['FG3A']
     new_total_stats['FT_PCT'] = new_total_stats['FTM']/new_total_stats['FTA']
 
+    drop_cols = ['VIDEO_AVAILABLE', 'Player_ID', 'PLUS_MINUS', 'MIN', 'PF', 'FGM', 'FGA', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'OREB', 'DREB']
     trade_eval_stats = new_total_stats - current_total_stats
-    trade_eval_stats = trade_eval_stats.drop(['VIDEO_AVAILABLE', 'Player_ID', 'PLUS_MINUS', 'MIN', 'PF', 'FGM', 'FGA', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'OREB', 'DREB'])
+    trade_eval_stats = trade_eval_stats.drop(drop_cols)
+    current_total_stats = current_total_stats.drop(drop_cols)
+    
+    pct_change_stats = trade_eval_stats / current_total_stats
+    
+    df1 = pd.DataFrame(trade_eval_stats, columns = ['Weekly Change'])
+    df2 = pd.DataFrame(pct_change_stats, columns = ['Percent Change'])
+    
+    chart = df1.merge(df2, 'inner', left_index = True, right_index = True)
+    graph_bar = [go.Bar(
+            x = list(pd.DataFrame(pct_change_stats).reset_index()['index']),
+            y = list(pct_change_stats.round(3))
+        )]
+    layout = {
+                'xaxis': {'title': '% Change'},
+                'yaxis': {'title': 'Fantasy Category'},
+                'barmode': 'relative',
+                'title' : 'Trade Evaluator'
+            }
 
-    return trade_eval_stats.round(3) 
+    bar = plot({'data': graph_bar, 'layout': layout})
+    
+    data = bar if graph_data == True else chart
+
+    return data
 
 
 def combineTeam(name, season=current_year):
