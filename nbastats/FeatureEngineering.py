@@ -24,6 +24,28 @@ fantasy_team = ['john wall', 'rudy gobert', 'lonzo ball', 'khris middleton', 'jj
 trade_for = ['kyle lowry', 'thaddeus young']
 trading = ['john wall', 'jj redick']
 
+<<<<<<< HEAD
+playerInfo = pd.DataFrame(player.PlayerList(season='2017-18', only_current=1).info())
+"""
+def tradeEvaluator(current_team, proposed_players, receiving_players, season=2017):
+    df = pd.DataFrame()
+    for i in current_team:
+        data = getData(i, 'GameLog', season)
+        data['PLAYER_NAME'] = i.title()
+        df = df.append(data)
+        sleep(3)
+
+    for i in receiving_players:
+    	data = getData(i, 'GameLog', season)
+    	data['PLAYER_NAME'] = i.title()
+    	df = df.append(data)
+    	sleep(3)
+
+    mean = pd.DataFrame(df.groupby('PLAYER_NAME').mean.())
+	std = pd.DataFrame(df.groupby('PLAYER_NAME').std())
+	stats = pd.merge(mean, std, how = 'inner', on = 'PLAYER_NAME')
+	df = pd.merge(df, stats, how = 'inner', on = 'PLAYER_NAME')
+=======
 playerInfo = pd.DataFrame(player.PlayerList(season=str(current_year)+'-'+str(int(current_year)+1)[-2:], only_current=1).info())
 
 def getStats(player_list, season=current_year, last_game_range = None):
@@ -43,6 +65,7 @@ def getStats(player_list, season=current_year, last_game_range = None):
         df = df.append(data)
         sleep(randint(1,3))
 
+>>>>>>> master
     return df
 
 
